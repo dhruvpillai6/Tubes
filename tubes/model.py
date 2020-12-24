@@ -1,5 +1,5 @@
 from collections import Counter, defaultdict, namedtuple
-from itertools import combinations
+from itertools import permutations
 
 legal_move = namedtuple('legal_move', ['coming_from', 'to'])
 move = namedtuple('move', ['coming_from', 'color', 'num_slots', 'from_slots',
@@ -45,9 +45,19 @@ class Tube:
     def __str__(self):
         return '\n'.join(f'| {self.__getattribute__(slot)} | - {slot}' for slot in self)
 
+    def __eq__(self, other):
+        return all(self._color(slot) == other._color(slot) for slot in self)
+
+    def __hash__(self):
+        return hash(tuple((self._color(slot) for slot in self)))
+
     def _iter_slots(self):
         yield from [self.__getattribute__(item) for item in self.__dir__() if not
         item.startswith('_')]
+
+    @property
+    def _empty_slots(self):
+        return [slot for slot in self if not self.__getattribute__(slot)]
 
     @property
     def _is_full(self):
@@ -115,7 +125,7 @@ class Tube:
     def _colors(self):
         return {color for color in self._iter_slots() if color is not None}
 
-    def _pour_in(self, from_tube):
+    def _pour_in(self, from_tube, slots_over=None):
         if type(from_tube) is not Tube:
             raise TypeError(f'from_tube is of type {type(from_tube)} when it should '
                             f'be {type(Tube)}')
@@ -126,7 +136,10 @@ class Tube:
         elif not self._is_empty:
             if from_tube._color_to_pour != self._color_to_pour:
                 raise RuntimeError('colors are not the same')
-        for slot in from_tube._slots_to_pour:
+        slots = slots_over if slots_over else from_tube._slots_to_pour
+        for slot in slots:
+            if self._is_full:
+                raise RuntimeError('Tube is full')
             self.__setattr__(self._last_empty, from_tube._color(slot))
             from_tube.__setattr__(slot, None)
 
@@ -154,6 +167,9 @@ class Game:
         self._legal_moves = {}
         #TODO: valdiate same number of slots per tube, validate multiples of colors
         # is correct
+
+    def __hash__(self):
+        return hash(tuple(hash(tube) for tube in self._iter_tubes()))
 
     @property
     def _color_counter(self):
@@ -230,6 +246,9 @@ class Game:
             print_list.append(row)
         return '\n'.join(str(value) for value in print_list)
 
+    def __repr__(self):
+        return f'<Game>'
+
     def _retrieve_tube(self, identity):
         for tube in self._iter_tubes():
             if tube._id == identity:
@@ -237,8 +256,10 @@ class Game:
         return None
 
     def _forecast(self):
+        game1 = self
+        hash1 = hash(self)
         self._legal_moves = {}
-        combs = combinations(self._tubes, 2)
+        combs = permutations(self._tubes, 2)
         for comb in combs:
             try:
                 self._push_move(comb[0], comb[1])
@@ -246,6 +267,11 @@ class Game:
                 continue
             score = self._color_score
             self._pop_move()
+            hash2 = hash(self)
+            if hash1 != hash2:
+                pass
+                # print(comb)
+                # raise ValueError
             self._legal_moves[comb] = score
         if not self._legal_moves:
             raise InterruptedError('No Legal Moves Left')
@@ -257,8 +283,10 @@ class Game:
         if from_tube._is_empty or to_tube._is_full:
             raise RuntimeError
         color = from_tube._color_to_pour
-        num_slots = len(from_tube._slots_to_pour)
+        num_slots = min(len(from_tube._slots_to_pour), len(to_tube._empty_slots))
         from_slots = from_tube._slots_to_pour
+        while len(from_slots) > num_slots:
+            del from_slots[-1]
         slots_filled = [to_tube._last_empty]
         idx = to_tube._slots.index(to_tube._last_empty)
         for i in range(num_slots):
@@ -266,14 +294,15 @@ class Game:
                 continue
             if idx < 0:
                 raise RuntimeError
-            idx = idx - i
+            idx = idx - 1
             slot = to_tube._slots[idx]
             slots_filled.append(slot)
 
         cur_move = move(from_tube_identity, color, num_slots, from_slots,
                         to_tube_identity, slots_filled)
         self._moves.append(cur_move)
-        to_tube._pour_in(from_tube)
+        to_tube._pour_in(from_tube, from_slots)
+        # self._legal_moves = {}
         return cur_move
 
     def _pop_move(self):
@@ -292,9 +321,12 @@ class Game:
                 coming_from.__setattr__(slot, color)
             for slot in to_slots:
                 going_to.__setattr__(slot, None)
+            # self._legal_moves = {}
             return 0
 
 if __name__ == '__main__':
     obj1 = Tube([None, None, None, 'blue'])
-    obj2 = Tube([None, 'red', 'blue', 'blue'])
-    print(obj2._colors)
+    obj2 = Tube([None, None, None, 'blue'])
+    print(obj1 == obj2)
+    print(hash(obj1))
+    print(hash(obj2))
