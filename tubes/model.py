@@ -241,8 +241,6 @@ class Game:
                     right_pad_len += 1
                 entry = f'|{" "  * left_pad_len}{str(color)}{" " * right_pad_len}|'
                 row = f'{row}{entry}'
-            # new_row = '   |   '.join(str(color) for color in row_list)
-            # new_row = f'|   {new_row}   |'
             print_list.append(row)
         return '\n'.join(str(value) for value in print_list)
 
@@ -256,8 +254,6 @@ class Game:
         return None
 
     def _forecast(self):
-        game1 = self
-        hash1 = hash(self)
         self._legal_moves = {}
         combs = permutations(self._tubes, 2)
         for comb in combs:
@@ -267,11 +263,6 @@ class Game:
                 continue
             score = self._color_score
             self._pop_move()
-            hash2 = hash(self)
-            if hash1 != hash2:
-                pass
-                # print(comb)
-                # raise ValueError
             self._legal_moves[comb] = score
         if not self._legal_moves:
             raise InterruptedError('No Legal Moves Left')
@@ -302,7 +293,6 @@ class Game:
                         to_tube_identity, slots_filled)
         self._moves.append(cur_move)
         to_tube._pour_in(from_tube, from_slots)
-        # self._legal_moves = {}
         return cur_move
 
     def _pop_move(self):
@@ -323,6 +313,7 @@ class Game:
                 going_to.__setattr__(slot, None)
             # self._legal_moves = {}
             return 0
+
 
 if __name__ == '__main__':
     obj1 = Tube([None, None, None, 'blue'])
