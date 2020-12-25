@@ -1,24 +1,7 @@
 import logging
-import yaml
 from copy import deepcopy
 
-from tubes.model import Game
-
 logging.basicConfig(level=logging.INFO)
-input_file = '../fixtures/test_1.yml'
-
-tree_keys = [('game', None),
-             ('hash', None),
-             ('legal_moves', []),
-             ('moves', []),
-             ('solved', False)]
-
-
-def main():
-    with open(input_file) as file:
-        config = yaml.safe_load(file)
-    game = Game(config)
-    solve(game)
 
 
 class GameState:
@@ -96,7 +79,3 @@ def solve(game_input):
                 return game_state.moves
 
         logging.debug(f'depth: {num_moves_tried}')
-
-
-if __name__ == '__main__':
-    main()
