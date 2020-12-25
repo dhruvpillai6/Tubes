@@ -117,7 +117,7 @@ class TestTube(unittest.TestCase):
         self.assertTrue(self.tube_empty._solved)
         self.assertTrue(Tube(['red', 'red', 'red', 'red'])._solved)
 
-    def test_color(self):
+    def test_colors(self):
         self.assertEqual(
             {Color('red'), Color('green'), Color('blue'), Color('yellow')},
             self.tube_full._colors
