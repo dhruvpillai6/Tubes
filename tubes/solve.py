@@ -1,8 +1,7 @@
 import yaml
-from model import *
-import random
 from copy import deepcopy
-from pprint import pprint
+
+from tubes.model import Game
 
 input_file = '../fixtures/lvl3.yml'
 
@@ -15,32 +14,9 @@ tree_keys = [('game', None),
 
 def main():
     with open(input_file) as file:
-        config = yaml.load(file, Loader=yaml.SafeLoader)
+        config = yaml.safe_load(file)
     game = Game(config)
     solve(game)
-
-
-def pick_move(game):
-    """
-    Deprecated--originally implemented as part of a naive solver
-    :param game:
-    :return: a tuple of length 2 which corresponds to a move
-    """
-    game._forecast()
-    moves = game._legal_moves
-    min_value = min(moves.values())
-    min_keys = [move for move in moves if moves[move] == min_value]
-    return random.choice(min_keys)
-
-
-def execute_move(game, move):
-    """
-    Deprecated
-    :param game:
-    :param move:
-    :return:
-    """
-    game._push_move(move[0], move[1])
 
 
 def solve(game_input):
