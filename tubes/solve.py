@@ -34,8 +34,9 @@ class GameState:
         # This is not yet used, but could be leveraged for less naive move selection
         return self.game._color_score
 
-    def add_move(self, move):
+    def make_move(self, move):
         self.moves.append(move)
+        self.game._push_move(*move)
 
 
 def solve(game_input):
@@ -59,9 +60,9 @@ def solve(game_input):
     while queue:
         num_moves_tried += 1
 
-        # take the first element in the queue and get read to analyze. Also,
-        # note that we have visited this node
+        # take the first element in the queue and get ready to analyze.
         node = queue.pop(0)
+        # Also, note that we have visited this node
         visited.add(node.game)
 
         # In order to prevent inappropriate copying of information from one node to
@@ -69,7 +70,7 @@ def solve(game_input):
         if node.solved:
             print('solved!')
             print(game_state.moves)
-            print('depth: ', len(game_state.moves))
+            print(f'depth: {len(game_state.moves)}')
             return game_state.moves
 
         # Determine what moves are legal from the given state.
@@ -79,8 +80,7 @@ def solve(game_input):
         # Evaluate each legal move for its effect on the state of the game
         for move in legal_moves:
             game_state = deepcopy(node)
-            game_state.add_move(move)
-            game_state.game._push_move(*move)
+            game_state.make_move(move)
             # Leave for debugging.
             # print(game_state.moves)
             if game_state.game not in visited:
@@ -88,7 +88,7 @@ def solve(game_input):
             if game_state.solved:
                 print('solved!')
                 print(game_state.moves)
-                print('depth: ', len(game_state.moves))
+                print(f'depth: {len(game_state.moves)}')
                 return game_state.moves
         # Leave for debugging
         # print('depth: ', depth)
