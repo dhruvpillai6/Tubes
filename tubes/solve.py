@@ -1,9 +1,11 @@
+import logging
 import yaml
 from copy import deepcopy
 
 from tubes.model import Game
 
-input_file = '../fixtures/lvl3.yml'
+logging.basicConfig(level=logging.INFO)
+input_file = '../fixtures/test_1.yml'
 
 tree_keys = [('game', None),
              ('hash', None),
@@ -51,10 +53,11 @@ def solve(game_input):
     :param game_input: Game object
     :return: #TODO: return solution
     """
+    game_state = GameState(game_input)
+
     # Queue and visited are utilized as standard BFS structures. The queue stores the
     # unevaluated states, and the visited stores hashes of previously seen states.
-    queue = [GameState(game_input)]
-    visited = set()
+    queue, visited = [game_state], set()
     num_moves_tried = 0
 
     while queue:
@@ -68,9 +71,9 @@ def solve(game_input):
         # In order to prevent inappropriate copying of information from one node to
         # another, copy the node information to avoid making changes to the original.
         if node.solved:
-            print('solved!')
-            print(game_state.moves)
-            print(f'depth: {len(game_state.moves)}')
+            logging.info('solved!')
+            logging.info(game_state.moves)
+            logging.info(f'depth: {len(game_state.moves)}')
             return game_state.moves
 
         # Determine what moves are legal from the given state.
@@ -81,17 +84,18 @@ def solve(game_input):
         for move in legal_moves:
             game_state = deepcopy(node)
             game_state.make_move(move)
-            # Leave for debugging.
-            # print(game_state.moves)
+            logging.debug(game_state.moves)
+
             if game_state.game not in visited:
                 queue.append(game_state)
+
             if game_state.solved:
-                print('solved!')
-                print(game_state.moves)
-                print(f'depth: {len(game_state.moves)}')
+                logging.info('solved!')
+                logging.info(game_state.moves)
+                logging.info(f'depth: {len(game_state.moves)}')
                 return game_state.moves
-        # Leave for debugging
-        # print('depth: ', depth)
+
+        logging.debug(f'depth: {num_moves_tried}')
 
 
 if __name__ == '__main__':
