@@ -2,7 +2,7 @@ import unittest
 
 import yaml
 
-from tubes.model import Game, Tube, Color
+from tubes.model import Game, Tube, Color, move
 
 
 class TestColor(unittest.TestCase):
@@ -198,23 +198,108 @@ class TestGame(unittest.TestCase):
 
         self.assertTrue(hasattr(self.game, 'tube_1'))
         self.assertIsInstance(self.game.tube_1, Tube)
-        self.assertEqual(self.game.tube_1, Tube(['blue', 'blue', 'green', 'blue']))
+        self.assertEqual(Tube(['blue', 'blue', 'green', 'blue']), self.game.tube_1)
         self.assertTrue(hasattr(self.game, 'tube_2'))
         self.assertIsInstance(self.game.tube_2, Tube)
-        self.assertEqual(self.game.tube_2, Tube(['blue', 'green', 'green', 'green']))
+        self.assertEqual(Tube(['blue', 'green', 'green', 'green']), self.game.tube_2)
         self.assertTrue(hasattr(self.game, 'tube_3'))
         self.assertIsInstance(self.game.tube_3, Tube)
-        self.assertEqual(self.game.tube_3, Tube([]))
+        self.assertEqual(Tube([]), self.game.tube_3)
 
         self.assertEqual({Color('blue'), Color('green')}, self.game._colors)
 
+    def test_color_counter(self):
+        counter = self.game._color_counter
+        self.assertEqual(4, counter[Color('blue')])
+        self.assertEqual(4, counter[Color('green')])
+
+    def test_solved(self):
+        self.assertFalse(self.game._solved)
+        with open('fixtures/game_solved.yml') as file:
+            config = yaml.safe_load(file)
+        game_solved = Game(config)
+        self.assertTrue(game_solved._solved)
+
+    def test_color_score_raw(self):
+        self.assertEqual({Color('green'): 4, Color('blue'): 5},
+                         dict(self.game._color_score_raw))
+
+    def test_color_score(self):
+        self.assertEqual(9, self.game._color_score)
+
     def test_iterate(self):
         items = iter(self.game)
-        self.assertEqual(next(items), 'tube_1')
-        self.assertEqual(next(items), 'tube_2')
-        self.assertEqual(next(items), 'tube_3')
+        self.assertEqual('tube_1', next(items))
+        self.assertEqual('tube_2', next(items))
+        self.assertEqual('tube_3', next(items))
         with self.assertRaises(StopIteration):
             next(items)
+
+    def test_iter_tubes(self):
+        items = self.game._iter_tubes()
+        self.assertEqual(Tube(['blue', 'blue', 'green', 'blue']), next(items))
+        self.assertEqual(Tube(['blue', 'green', 'green', 'green']), next(items))
+        self.assertEqual(Tube([]), next(items))
+        with self.assertRaises(StopIteration):
+            next(items)
+
+    def test_str(self):
+        expected = '\n'.join([
+            "9",
+            "defaultdict(<class 'int'>, {<Color: blue>: 5, <Color: green>: 4})",
+            "|<Color: blue> ||<Color: blue> ||     None     |",
+            "|<Color: blue> ||<Color: green>||     None     |",
+            "|<Color: green>||<Color: green>||     None     |",
+            "|<Color: blue> ||<Color: green>||     None     |",
+        ])
+        self.assertEqual(expected, str(self.game))
+
+    def test_repr(self):
+        self.assertEqual('<Game>', repr(self.game))
+
+    def test_retrieve_tube(self):
+        self.assertEqual(Tube(['blue', 'blue', 'green', 'blue']),
+                         self.game._retrieve_tube(1))
+        self.assertEqual(Tube(['blue', 'green', 'green', 'green']),
+                         self.game._retrieve_tube(2))
+        self.assertEqual(Tube([]), self.game._retrieve_tube(3))
+
+    def test_forecast(self):
+        self.assertEqual({}, self.game._legal_moves)
+        self.assertEqual(0, self.game._forecast())
+        self.assertEqual({(1, 3): 7, (2, 3): 8}, self.game._legal_moves)
+
+        with open('fixtures/game_no_legal_moves.yml') as file:
+            config = yaml.safe_load(file)
+        game = Game(config)
+        with self.assertRaises(InterruptedError):
+            game._forecast()
+
+    def test_push_move(self):
+        with open('fixtures/game_simple_transfer.yml') as file:
+            config = yaml.safe_load(file)
+        game = Game(config)
+        expected_move = move(coming_from=1, from_slots=['third'],
+                             going_to=2, to_slots=['second'],
+                             num_slots=1, color=Color('green'))
+        self.assertEqual([], game._moves)
+        self.assertEqual(expected_move, game._push_move(1, 2))
+        self.assertEqual(Tube([None, None, None, 'blue']), game.tube_1)
+        self.assertEqual(Tube([None, 'green', 'green', 'green']), game.tube_2)
+        self.assertEqual([expected_move], game._moves)
+
+    def test_pop_move(self):
+        with open('fixtures/game_simple_transfer_complete.yml') as file:
+            config = yaml.safe_load(file)
+        game = Game(config)
+        self.assertEqual(1, game._pop_move())
+        game._moves = [move(coming_from=1, from_slots=['third'],
+                            going_to=2, to_slots=['second'],
+                            num_slots=1, color=Color('green'))]
+        self.assertEqual(0, game._pop_move())
+        self.assertEqual(Tube([None, None, 'green', 'blue']), game.tube_1)
+        self.assertEqual(Tube([None, None, 'green', 'green']), game.tube_2)
+        self.assertEqual([], game._moves)
 
 
 if __name__ == '__main__':
