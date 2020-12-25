@@ -20,30 +20,22 @@ def main():
 
 
 class GameState:
-    def __init__(self, game=None, legal_moves=None, moves=None):
+    def __init__(self, game=None, moves=None, legal_moves=None):
         self.game = game
         self.moves = moves or []
         self.legal_moves = legal_moves or {}
 
     @property
     def solved(self) -> bool:
-        """Indicates whether or not the node is solved."""
         return self.game._solved
 
     @property
     def score(self) -> int:
-        """
-        Indicates the value of current state.
-
-        This is not yet used, but could be leveraged for
-        less naive move selection.
-        """
+        # This is not yet used, but could be leveraged for less naive move selection
         return self.game._color_score
 
-    def update(self, game, moves=None, legal_moves=None):
-        self.game = game
-        self.moves = moves or []
-        self.legal_moves = legal_moves or {}
+    def add_move(self, move):
+        self.moves.append(move)
 
 
 def solve(game_input):
@@ -81,22 +73,14 @@ def solve(game_input):
             return game_state.moves
 
         # Determine what moves are legal from the given state.
-        game = node.game
-        game._forecast()
-        legal_moves = game._legal_moves
+        node.game._forecast()
+        legal_moves = node.game._legal_moves
 
         # Evaluate each legal move for its effect on the state of the game
         for move in legal_moves:
             game_state = deepcopy(node)
-            if not game_state.legal_moves:
-                game_state.legal_moves = {move: GameState()}
-            else:
-                game_state.legal_moves[move] = GameState()
-            cur_moves = game_state.moves
-            game_state = game_state.legal_moves[move]
-            active_game = deepcopy(game)
-            active_game._push_move(*move)
-            game_state.update(active_game, cur_moves + [move])
+            game_state.add_move(move)
+            game_state.game._push_move(*move)
             # Leave for debugging.
             # print(game_state.moves)
             if game_state.game not in visited:
