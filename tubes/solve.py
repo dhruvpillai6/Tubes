@@ -75,7 +75,7 @@ def solve(game_input):
             print('solved!')
             print(active_dict['moves'])
             print('depth: ', len(active_dict['moves']))
-            return
+            return active_dict['moves']
 
         # Determine what moves are legal from the given state.
         game = node['game']
@@ -108,7 +108,7 @@ def solve(game_input):
                 print('solved!')
                 print(active_dict['moves'])
                 print('depth: ', len(active_dict['moves']))
-                return
+                return active_dict['moves']
         # Leave for debugging
         # print('depth: ', depth)
 
