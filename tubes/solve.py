@@ -19,11 +19,16 @@ def main():
     solve(game)
 
 
-class GameState(dict):
+class GameState:
+    def __init__(self, game=None, legal_moves=None, moves=None):
+        self.game = game
+        self.moves = moves or []
+        self.legal_moves = legal_moves or {}
+
     @property
     def solved(self) -> bool:
         """Indicates whether or not the node is solved."""
-        return self['game']._solved
+        return self.game._solved
 
     @property
     def score(self) -> int:
@@ -33,16 +38,12 @@ class GameState(dict):
         This is not yet used, but could be leveraged for
         less naive move selection.
         """
-        return self['game']._color_score
+        return self.game._color_score
 
-    def __getattr__(self, item):
-        try:
-            return super().__getitem__(item)
-        except KeyError:
-            raise AttributeError
-
-    def update(self, **kwargs):
-        super().update(kwargs)
+    def update(self, game, moves=None, legal_moves=None):
+        self.game = game
+        self.moves = moves or []
+        self.legal_moves = legal_moves or {}
 
 
 def solve(game_input):
@@ -59,11 +60,7 @@ def solve(game_input):
     """
     # Queue and visited are utilized as standard BFS structures. The queue stores the
     # unevaluated states, and the visited stores hashes of previously seen states.
-    queue = [GameState(
-        game=game_input,
-        moves=[],
-        legal_moves={}
-    )]
+    queue = [GameState(game_input)]
     visited = set()
     num_moves_tried = 0
 
@@ -99,11 +96,7 @@ def solve(game_input):
             game_state = game_state.legal_moves[move]
             active_game = deepcopy(game)
             active_game._push_move(*move)
-            game_state.update(
-                game=active_game,
-                moves=cur_moves + [move],
-                legal_moves={},
-            )
+            game_state.update(active_game, cur_moves + [move])
             # Leave for debugging.
             # print(game_state.moves)
             if game_state.game not in visited:
